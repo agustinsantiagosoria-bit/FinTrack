@@ -1,6 +1,6 @@
 
 import { useState } from 'react'
-import { Plus, Trash2, Wallet } from 'lucide-react'
+import { Pencil, Plus, Trash2, Wallet, X } from 'lucide-react'
 import type { Budget } from '../../types/budgets'
 import type { Category } from '../../types/category'
 import type { Transaction } from '../../types/transaction'
@@ -12,9 +12,20 @@ interface BudgetsProps {
   categories: Category[]
   transactions: Transaction[]
   currency: Currency
-  onAdd: (budget: Budget) => void
-  onDelete: (id: string) => void
+  onAdd: (budget: Budget) => Promise<void>
+  onUpdate: (budget: Budget) => Promise<void>
+  onDelete: (id: string) => Promise<void>
 }
+
+export default function Budgets({
+  budgets,
+  categories,
+  transactions,
+  currency,
+  onAdd,
+  onUpdate,
+  onDelete,
+}: BudgetsProps) {
 
 function getCurrentMonth() {
   const today = new Date()
@@ -24,18 +35,13 @@ function getCurrentMonth() {
     .toISOString()
     .slice(0, 7)
 }
-
-export default function Budgets({
-  budgets,
-  categories,
-  transactions,
-  currency,
-  onAdd,
-  onDelete,
-}: BudgetsProps) {
   const [category, setCategory] = useState('')
   const [month, setMonth] = useState(getCurrentMonth())
   const [limit, setLimit] = useState('')
+  const [saving, setSaving] = useState(false)
+const [deletingId, setDeletingId] = useState<string | null>(null)
+const [error, setError] = useState('')
+const [editingId, setEditingId] = useState<string | null>(null)
 
   const expenseCategories = categories.filter(
     (item) => item.type === 'expense'
@@ -45,42 +51,104 @@ export default function Budgets({
     (budget) => budget.month === month
   )
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
 
-    const numericLimit = Number(limit)
 
-    if (
-      !category ||
-      !month ||
-      !Number.isFinite(numericLimit) ||
-      numericLimit <= 0
-    ) {
-      return
-    }
+async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  event.preventDefault()
 
-    const alreadyExists = budgets.some(
-      (budget) =>
-        budget.category === category &&
-        budget.month === month
-    )
+  const numericLimit = Number(limit)
 
-    if (alreadyExists) {
-      alert('Ya existe un presupuesto para esta categoría y mes.')
-      return
-    }
-
-    const newBudget: Budget = {
-      id: crypto.randomUUID(),
-      category,
-      month,
-      limit: numericLimit,
-      createdAt: new Date().toISOString(),
-    }
-
-    onAdd(newBudget)
-    setLimit('')
+  if (
+    !category ||
+    !month ||
+    !Number.isFinite(numericLimit) ||
+    numericLimit <= 0 ||
+    saving
+  ) {
+    return
   }
+
+const alreadyExists = budgets.some(
+  (budget) =>
+    budget.category === category &&
+    budget.month === month &&
+    budget.id !== editingId
+)
+
+if (alreadyExists) {
+  setError('Ya existe un presupuesto para esta categoría y mes.')
+  return
+}
+
+const budgetData: Budget = {
+  id: editingId ?? crypto.randomUUID(),
+  category,
+  month,
+  limit: numericLimit,
+  createdAt: editingId
+    ? budgets.find((budget) => budget.id === editingId)?.createdAt ?? new Date().toISOString()
+    : new Date().toISOString(),
+}
+
+  setSaving(true)
+  setError('')
+
+try {
+  if (editingId) {
+    await onUpdate(budgetData)
+  } else {
+    await onAdd(budgetData)
+  }
+
+  setLimit('')
+  setEditingId(null)
+} catch {
+  setError(
+    editingId
+      ? 'No se pudo actualizar el presupuesto. Intentá nuevamente.'
+      : 'No se pudo crear el presupuesto. Intentá nuevamente.'
+  )
+} finally {
+  setSaving(false)
+}
+}
+
+function handleEdit(budget: Budget) {
+  setEditingId(budget.id)
+  setCategory(budget.category)
+  setMonth(budget.month)
+  setLimit(String(budget.limit))
+  setError('')
+}
+
+function handleCancelEdit() {
+  setEditingId(null)
+  setCategory('')
+  setMonth(getCurrentMonth())
+  setLimit('')
+  setError('')
+}
+
+async function handleDelete(budget: Budget) {
+  if (deletingId) return
+
+  const confirmed = window.confirm(
+    `¿Eliminar el presupuesto de ${budget.category}?`
+  )
+
+  if (!confirmed) return
+
+  setDeletingId(budget.id)
+  setError('')
+
+  try {
+    await onDelete(budget.id)
+  } catch {
+    setError('No se pudo eliminar el presupuesto. Intentá nuevamente.')
+  } finally {
+    setDeletingId(null)
+  }
+}
 
   function getSpent(categoryName: string) {
     return transactions
@@ -113,7 +181,7 @@ export default function Budgets({
         className="space-y-5 rounded-2xl border border-white/10 bg-[#11111B] p-6"
       >
         <h2 className="text-lg font-semibold">
-          Crear presupuesto
+          {editingId ? 'Editar presupuesto' : 'Crear presupuesto'}
         </h2>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -172,17 +240,38 @@ export default function Budgets({
           </div>
 
         </div>
+<div className="flex flex-wrap gap-3">
+  <button
+    type="submit"
+    disabled={expenseCategories.length === 0 || saving}
+    className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    <Plus size={18} />
+    {saving
+      ? 'Guardando...'
+      : editingId
+        ? 'Guardar cambios'
+        : 'Crear presupuesto'}
+  </button>
 
-        <button
-          type="submit"
-          disabled={expenseCategories.length === 0}
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Plus size={18} />
-          Crear presupuesto
-        </button>
+  {editingId && (
+    <button
+      type="button"
+      onClick={handleCancelEdit}
+      disabled={saving}
+      className="flex items-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-gray-300 transition hover:bg-white/5 disabled:opacity-50"
+    >
+      <X size={18} />
+      Cancelar
+    </button>
+  )}
+</div>
       </form>
-
+{error && (
+  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+    {error}
+  </div>
+)}
       {/* LISTADO */}
       <div className="rounded-2xl border border-white/10 bg-[#11111B]">
 
@@ -238,24 +327,27 @@ export default function Budgets({
                         Presupuesto mensual
                       </p>
                     </div>
+<div className="flex items-center gap-2">
+  <button
+    type="button"
+    onClick={() => handleEdit(budget)}
+    disabled={saving || deletingId !== null}
+    title="Editar presupuesto"
+    className="rounded-lg p-2 text-gray-500 transition hover:bg-violet-500/10 hover:text-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    <Pencil size={17} />
+  </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `¿Eliminar el presupuesto de ${budget.category}?`
-                          )
-                        ) {
-                          onDelete(budget.id)
-                        }
-                      }}
-                      title="Eliminar presupuesto"
-                      className="rounded-lg p-2 text-gray-500 transition hover:bg-rose-500/10 hover:text-rose-400"
-                    >
-                      <Trash2 size={17} />
-                    </button>
-                  </div>
+  <button
+    type="button"
+    onClick={() => handleDelete(budget)}
+    disabled={deletingId !== null || saving}
+    title="Eliminar presupuesto"
+    className="rounded-lg p-2 text-gray-500 transition hover:bg-rose-500/10 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    <Trash2 size={17} />
+  </button>
+</div>
 
                   <div className="flex flex-wrap items-end justify-between gap-3">
                     <div>
@@ -298,6 +390,8 @@ export default function Budgets({
                   <p className="text-xs text-gray-500">
                     {percentage.toFixed(1)}% del presupuesto utilizado
                   </p>
+                </div>
+                
                 </div>
               )
             })

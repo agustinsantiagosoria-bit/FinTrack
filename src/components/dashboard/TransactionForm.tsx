@@ -4,15 +4,17 @@ import { PlusCircle } from 'lucide-react'
 import type { Transaction, TransactionType } from '../../types/transaction'
 import { useEffect, useState } from 'react'
 import type { Category } from '../../types/category'
+import DatePicker from '../ui/DataPicker'
 
 interface TransactionFormProps {
-  onAdd: (transaction: Transaction) => void
+  onAdd: (transaction: Transaction) => Promise<void>
   categories: Category[]
 }
 
 function getTodayDate() {
   const today = new Date()
   const offset = today.getTimezoneOffset()
+
   return new Date(today.getTime() - offset * 60000)
     .toISOString()
     .split('T')[0]
@@ -24,34 +26,42 @@ export default function TransactionForm({
 }: TransactionFormProps) {
   const [type, setType] = useState<TransactionType>('expense')
   const [description, setDescription] = useState('')
-const [category, setCategory] = useState('')
+  const [category, setCategory] = useState('')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(getTodayDate())
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const availableCategories = categories.filter(
-  (item) => item.type === type
-)
-
-useEffect(() => {
-  const categoryExists = availableCategories.some(
-    (item) => item.name === category
+    (item) => item.type === type
   )
 
-  if (!categoryExists) {
-    setCategory(availableCategories[0]?.name ?? '')
+  useEffect(() => {
+    const categoryExists = availableCategories.some(
+      (item) => item.name === category
+    )
+
+    if (!categoryExists) {
+      setCategory(availableCategories[0]?.name ?? '')
+    }
+  }, [categories, type, category, availableCategories])
+
+  function handleTypeChange(newType: TransactionType) {
+    setType(newType)
   }
-}, [categories, type, category])
 
-function handleTypeChange(newType: TransactionType) {
-  setType(newType)
-}
-
-    function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const numericAmount = Number(amount)
 
-    if (!description.trim() || !category || !date || !Number.isFinite(numericAmount) || numericAmount <= 0) {
+    if (
+      !description.trim() ||
+      !category ||
+      !date ||
+      !Number.isFinite(numericAmount) ||
+      numericAmount <= 0
+    ) {
       return
     }
 
@@ -65,11 +75,20 @@ function handleTypeChange(newType: TransactionType) {
       createdAt: new Date().toISOString(),
     }
 
-    onAdd(newTransaction)
+    setSaving(true)
+    setError('')
 
-    setDescription('')
-    setAmount('')
-    setDate(getTodayDate())
+    try {
+      await onAdd(newTransaction)
+
+      setDescription('')
+      setAmount('')
+      setDate(getTodayDate())
+    } catch {
+      setError('No se pudo guardar el movimiento. Intentá nuevamente.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const isIncome = type === 'income'
@@ -122,7 +141,10 @@ function handleTypeChange(newType: TransactionType) {
 
         {/* DESCRIPCIÓN */}
         <div>
-          <label htmlFor="description" className="mb-2 block text-sm font-medium text-gray-300">
+          <label
+            htmlFor="description"
+            className="mb-2 block text-sm font-medium text-gray-300"
+          >
             Descripción
           </label>
 
@@ -140,7 +162,10 @@ function handleTypeChange(newType: TransactionType) {
 
         {/* CATEGORÍA */}
         <div>
-          <label htmlFor="category" className="mb-2 block text-sm font-medium text-gray-300">
+          <label
+            htmlFor="category"
+            className="mb-2 block text-sm font-medium text-gray-300"
+          >
             Categoría
           </label>
 
@@ -148,28 +173,31 @@ function handleTypeChange(newType: TransactionType) {
             id="category"
             value={category}
             onChange={(event) => setCategory(event.target.value)}
+            required
+            disabled={availableCategories.length === 0 || saving}
             className="w-full rounded-xl border border-white/10 bg-[#0B0B12] px-4 py-3 text-sm text-white outline-none focus:border-violet-500"
           >
-
             {availableCategories.length === 0 && (
-  <option value="">
-    No hay categorías disponibles
-  </option>
-)}
-{availableCategories.map((item) => (
-  <option key={item.id} value={item.name}>
-    {item.name}
-  </option>
-))}
-required
-disabled={availableCategories.length === 0}
+              <option value="">
+                No hay categorías disponibles
+              </option>
+            )}
+
+            {availableCategories.map((item) => (
+              <option key={item.id} value={item.name}>
+                {item.name}
+              </option>
+            ))}
           </select>
         </div>
 
         {/* IMPORTE Y FECHA */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="amount" className="mb-2 block text-sm font-medium text-gray-300">
+            <label
+              htmlFor="amount"
+              className="mb-2 block text-sm font-medium text-gray-300"
+            >
               Importe (ARS)
             </label>
 
@@ -186,33 +214,40 @@ disabled={availableCategories.length === 0}
             />
           </div>
 
-          <div>
-            <label htmlFor="date" className="mb-2 block text-sm font-medium text-gray-300">
-              Fecha
-            </label>
+<div>
+  <label className="mb-2 block text-sm font-medium text-gray-300">
+    Fecha
+  </label>
 
-            <input
-              id="date"
-              type="date"
-              required
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-[#0B0B12] px-4 py-3 text-sm text-white outline-none focus:border-violet-500"
-            />
-          </div>
-        </div>
+  <DatePicker
+    value={date}
+    onChange={setDate}
+    disabled={saving}
+  />
+</div>
+</div>
+
+        {/* ERROR */}
+        {error && (
+          <p className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+            {error}
+          </p>
+        )}
 
         {/* GUARDAR */}
         <button
           type="submit"
-          className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition ${
+          disabled={saving || availableCategories.length === 0}
+          className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
             isIncome
               ? 'bg-emerald-600 hover:bg-emerald-500'
               : 'bg-violet-600 hover:bg-violet-500'
           }`}
         >
           <PlusCircle size={18} />
-          Registrar {isIncome ? 'ingreso' : 'gasto'}
+          {saving
+            ? 'Guardando...'
+            : `Registrar ${isIncome ? 'ingreso' : 'gasto'}`}
         </button>
 
       </form>

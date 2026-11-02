@@ -1,5 +1,6 @@
 
 import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { Plus, Trash2, Tags } from 'lucide-react'
 import type { Category, CategoryType } from '../../types/category'
 import type { Transaction } from '../../types/transaction'
@@ -7,8 +8,8 @@ import type { Transaction } from '../../types/transaction'
 interface CategoriesProps {
   categories: Category[]
   transactions: Transaction[]
-  onAdd: (name: string, type: CategoryType) => void
-  onDelete: (id: string) => void
+  onAdd: (name: string, type: CategoryType) => Promise<void>
+  onDelete: (id: string) => Promise<void>
 }
 
 export default function Categories({
@@ -19,17 +20,20 @@ export default function Categories({
 }: CategoriesProps) {
   const [name, setName] = useState('')
   const [type, setType] = useState<CategoryType>('expense')
+  const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [error, setError] = useState('')
 
   const filteredCategories = categories.filter(
     (category) => category.type === type
   )
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const trimmedName = name.trim()
 
-    if (!trimmedName) return
+    if (!trimmedName || saving) return
 
     const alreadyExists = categories.some(
       (category) =>
@@ -38,12 +42,42 @@ export default function Categories({
     )
 
     if (alreadyExists) {
-      alert('Esta categoría ya existe.')
+      setError('Esta categoría ya existe.')
       return
     }
 
-    onAdd(trimmedName, type)
-    setName('')
+    setSaving(true)
+    setError('')
+
+    try {
+      await onAdd(trimmedName, type)
+      setName('')
+    } catch {
+      setError('No se pudo crear la categoría. Intentá nuevamente.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(category: Category) {
+    if (deletingId) return
+
+    const confirmed = window.confirm(
+      `¿Eliminar la categoría "${category.name}"?`
+    )
+
+    if (!confirmed) return
+
+    setDeletingId(category.id)
+    setError('')
+
+    try {
+      await onDelete(category.id)
+    } catch {
+      setError('No se pudo eliminar la categoría. Intentá nuevamente.')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -79,6 +113,7 @@ export default function Categories({
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Ej. Educación"
+              disabled={saving}
               className="w-full rounded-xl border border-white/10 bg-[#0B0B12] px-4 py-3 text-sm text-white outline-none focus:border-violet-500"
             />
           </div>
@@ -93,6 +128,7 @@ export default function Categories({
               onChange={(event) =>
                 setType(event.target.value as CategoryType)
               }
+              disabled={saving}
               className="w-full rounded-xl border border-white/10 bg-[#0B0B12] px-4 py-3 text-sm text-white outline-none focus:border-violet-500"
             >
               <option value="income">Ingreso</option>
@@ -103,12 +139,20 @@ export default function Categories({
 
         <button
           type="submit"
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500"
+          disabled={saving}
+          className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={18} />
-          Agregar categoría
+          {saving ? 'Guardando...' : 'Agregar categoría'}
         </button>
       </form>
+
+      {/* ERROR */}
+      {error && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+          {error}
+        </div>
+      )}
 
       {/* LISTADO */}
       <div className="rounded-2xl border border-white/10 bg-[#11111B]">
@@ -154,71 +198,61 @@ export default function Categories({
               No hay categorías disponibles.
             </div>
           ) : (
- 
-filteredCategories.map((category) => {
-  const usageCount = transactions.filter(
-    (transaction) =>
-      transaction.category === category.name &&
-      transaction.type === category.type
-  ).length
+            filteredCategories.map((category) => {
+              const usageCount = transactions.filter(
+                (transaction) =>
+                  transaction.category === category.name &&
+                  transaction.type === category.type
+              ).length
 
-  const isUsed = usageCount > 0
+              const isUsed = usageCount > 0
 
-  return (
-    <div
-      key={category.id}
-      className="flex items-center justify-between px-6 py-4"
-    >
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
-          <Tags size={19} />
+              return (
+                <div
+                  key={category.id}
+                  className="flex items-center justify-between px-6 py-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
+                      <Tags size={19} />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-white">
+                        {category.name}
+                      </p>
+
+                      <p className="text-xs text-gray-500">
+                        {usageCount}{' '}
+                        {usageCount === 1
+                          ? 'movimiento asociado'
+                          : 'movimientos asociados'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isUsed || deletingId !== null}
+                    onClick={() => handleDelete(category)}
+                    title={
+                      isUsed
+                        ? 'No podés eliminar una categoría que está en uso'
+                        : 'Eliminar categoría'
+                    }
+                    className={`rounded-lg p-2 transition ${
+                      isUsed || deletingId !== null
+                        ? 'cursor-not-allowed text-gray-700'
+                        : 'text-gray-500 hover:bg-rose-500/10 hover:text-rose-400'
+                    }`}
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                </div>
+              )
+            })
+          )}
         </div>
-
-        <div>
-          <p className="text-sm font-medium text-white">
-            {category.name}
-          </p>
-
-          <p className="text-xs text-gray-500">
-            {usageCount} {usageCount === 1
-              ? 'movimiento asociado'
-              : 'movimientos asociados'}
-          </p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        disabled={isUsed}
-        onClick={() => {
-          if (
-            window.confirm(
-              `¿Eliminar la categoría "${category.name}"?`
-            )
-          ) {
-            onDelete(category.id)
-          }
-        }}
-        title={
-          isUsed
-            ? 'No podés eliminar una categoría que está en uso'
-            : 'Eliminar categoría'
-        }
-        className={`rounded-lg p-2 transition ${
-          isUsed
-            ? 'cursor-not-allowed text-gray-700'
-            : 'text-gray-500 hover:bg-rose-500/10 hover:text-rose-400'
-        }`}
-      >
-        <Trash2 size={17} />
-      </button>
-      </div>
-    )
-  })
-)}
-
-        </div>
-
       </div>
     </section>
   )

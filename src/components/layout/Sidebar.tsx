@@ -34,12 +34,16 @@ interface SidebarProps {
   activeItem: string
   onNavigate: (page: string) => void
   onNewTransaction: () => void
+  userEmail: string
+onSignOut: () => Promise<void>
 }
 
 export default function Sidebar({
   activeItem,
   onNavigate,
   onNewTransaction,
+  userEmail,
+  onSignOut,
 }: SidebarProps) {
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-white/10 bg-[#11111B] px-5 py-6 text-white">
@@ -125,23 +129,28 @@ export default function Sidebar({
       </div>
 
       {/* PERFIL */}
-      <div className="mt-5 flex items-center gap-3 border-t border-white/10 pt-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
-          AS
-        </div>
+<div className="mt-5 flex items-center gap-3 border-t border-white/10 pt-5">
+  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
+    {userEmail.charAt(0).toUpperCase()}
+  </div>
 
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">
-            Mi cuenta
-          </p>
-          <p className="text-xs text-gray-500">
-            Usuario FinTrack
-          </p>
-        </div>
+  <div className="min-w-0 flex-1">
+    <p className="truncate text-sm font-semibold">
+      Mi cuenta
+    </p>
+    <p className="truncate text-xs text-gray-500">
+      {userEmail}
+    </p>
+  </div>
 
-        <LogOut size={17} className="text-gray-500" />
-      </div>
-
+  <button
+    onClick={onSignOut}
+    title="Cerrar sesión"
+    className="text-gray-500 transition hover:text-red-400"
+  >
+    <LogOut size={17} />
+  </button>
+</div>
     </aside>
   )
 }

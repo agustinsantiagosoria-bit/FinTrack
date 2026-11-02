@@ -5,11 +5,13 @@ import {
   Info,
 } from 'lucide-react'
 
+import { useState } from 'react'
+
 import type { Currency } from '../../hooks/useSettings'
 
 interface SettingsProps {
   currency: Currency
-  onCurrencyChange: (currency: Currency) => void
+  onCurrencyChange: (currency: Currency) => Promise<void>
 }
 
 const currencyOptions = [
@@ -18,10 +20,29 @@ const currencyOptions = [
   { value: 'EUR', label: 'Euro (EUR)' },
 ] as const
 
+
 export default function Settings({
   currency,
   onCurrencyChange,
 }: SettingsProps) {
+
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleCurrencyChange(currency: Currency) {
+    if (saving) return
+
+    setSaving(true)
+    setError('')
+
+    try {
+      await onCurrencyChange(currency)
+    } catch {
+      setError('No se pudo guardar la moneda. Intentá nuevamente.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const preview = new Intl.NumberFormat('es-AR', {
     style: 'currency',
@@ -69,9 +90,10 @@ export default function Settings({
 
             <select
               value={currency}
-              onChange={(event) =>
-                onCurrencyChange(event.target.value as Currency)
-              }
+onChange={(event) =>
+  handleCurrencyChange(event.target.value as Currency)
+}
+disabled={saving}
               className="w-full rounded-xl border border-white/10 bg-[#0B0B12] px-4 py-3 text-sm text-white outline-none focus:border-violet-500 sm:w-72"
             >
               {currencyOptions.map((option) => (
@@ -80,6 +102,12 @@ export default function Settings({
                 </option>
               ))}
             </select>
+
+            {error && (
+  <p className="mt-2 text-sm text-red-400">
+    {error}
+  </p>
+)}
           </div>
 
           <div className="border-t border-white/5" />
