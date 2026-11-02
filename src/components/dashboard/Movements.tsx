@@ -271,10 +271,10 @@ export default function Movements({
 
       {actionError && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{actionError}</p>}
 
-      {/* TABLA */}
+      {/* HISTORIAL DE MOVIMIENTOS */}
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#11111B]">
 
-        <div className="border-b border-white/10 px-6 py-5">
+        <div className="border-b border-white/10 px-5 py-5 md:px-6">
           <h2 className="font-semibold">Historial de movimientos</h2>
           <p className="mt-1 text-xs text-gray-500">
             {filteredTransactions.length} movimientos encontrados
@@ -291,108 +291,196 @@ export default function Movements({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-
-              <thead className="border-b border-white/10 text-xs text-gray-500">
-                <tr>
-                  <th className="px-6 py-4 font-medium">Movimiento</th>
-                  <th className="px-6 py-4 font-medium">Categoría</th>
-                  <th className="px-6 py-4 font-medium">Fecha</th>
-                  <th className="px-6 py-4 text-right font-medium">Importe</th>
-                  <th className="px-6 py-4 text-right font-medium">Acciones</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-white/5">
-                {filteredTransactions.map((transaction) => (
-                  <tr
-                    key={transaction.id}
-                    className="transition hover:bg-white/[0.02]"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                            transaction.type === 'income'
-                              ? 'bg-emerald-500/10 text-emerald-400'
-                              : 'bg-rose-500/10 text-rose-400'
-                          }`}
-                        >
-                          {transaction.type === 'income' ? (
-                            <ArrowDownLeft size={19} />
-                          ) : (
-                            <ArrowUpRight size={19} />
-                          )}
-                        </div>
-
-                        <div>
-                          <p className="font-medium text-white">
-                            {transaction.description}
-                          </p>
-                          <p className="mt-1 text-xs text-gray-500">
-                            {transaction.type === 'income'
-                              ? 'Ingreso'
-                              : 'Gasto'}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4 text-gray-400">
-                      {transaction.category}
-                    </td>
-
-                    <td className="px-6 py-4 text-gray-400">
-                      {formatDate(transaction.date)}
-                    </td>
-
-                    <td
-                      className={`px-6 py-4 text-right font-semibold ${
+          <>
+            {/* VISTA PARA CELULARES */}
+            <div className="divide-y divide-white/5 md:hidden">
+              {filteredTransactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="space-y-4 p-4"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
                         transaction.type === 'income'
-                          ? 'text-emerald-400'
-                          : 'text-rose-400'
+                          ? 'bg-emerald-500/10 text-emerald-400'
+                          : 'bg-rose-500/10 text-rose-400'
                       }`}
                     >
-                      {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(transaction.amount, currency)}
-                    </td>
+                      {transaction.type === 'income' ? (
+                        <ArrowDownLeft size={20} />
+                      ) : (
+                        <ArrowUpRight size={20} />
+                      )}
+                    </div>
 
-                    <td className="px-6 py-4">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => setEditingTransaction(transaction)}
-                          title="Editar movimiento"
-                          className="rounded-lg p-2 text-gray-500 transition hover:bg-violet-500/10 hover:text-violet-400"
-                        >
-                          <Pencil size={17} />
-                        </button>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-white">
+                        {transaction.description}
+                      </p>
+                      <p className="mt-1 truncate text-xs text-gray-500">
+                        {transaction.category}
+                      </p>
+                    </div>
+                  </div>
 
-                        <button
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                '¿Estás seguro de eliminar este movimiento?'
-                              )
-                            ) {
-                              void handleDelete(transaction.id)
-                            }
-                          }}
-                          title="Eliminar movimiento"
-                          className="rounded-lg p-2 text-gray-500 transition hover:bg-rose-500/10 hover:text-rose-400"
-                        >
-                          <Trash2 size={17} />
-                        </button>
-                      </div>
-                    </td>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p
+                        className={`text-lg font-bold ${
+                          transaction.type === 'income'
+                            ? 'text-emerald-400'
+                            : 'text-rose-400'
+                        }`}
+                      >
+                        {transaction.type === 'income' ? '+' : '-'}
+                        {formatCurrency(transaction.amount, currency)}
+                      </p>
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        {formatDate(transaction.date)}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingTransaction(transaction)}
+                        title="Editar movimiento"
+                        aria-label="Editar movimiento"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-400 transition hover:bg-violet-500/10 hover:text-violet-400"
+                      >
+                        <Pencil size={18} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              '¿Estás seguro de eliminar este movimiento?'
+                            )
+                          ) {
+                            void handleDelete(transaction.id)
+                          }
+                        }}
+                        title="Eliminar movimiento"
+                        aria-label="Eliminar movimiento"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-400 transition hover:bg-rose-500/10 hover:text-rose-400"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* VISTA PARA COMPUTADORAS */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-left text-sm">
+
+                <thead className="border-b border-white/10 text-xs text-gray-500">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">Movimiento</th>
+                    <th className="px-6 py-4 font-medium">Categoría</th>
+                    <th className="px-6 py-4 font-medium">Fecha</th>
+                    <th className="px-6 py-4 text-right font-medium">Importe</th>
+                    <th className="px-6 py-4 text-right font-medium">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
+                </thead>
 
-            </table>
-          </div>
+                <tbody className="divide-y divide-white/5">
+                  {filteredTransactions.map((transaction) => (
+                    <tr
+                      key={transaction.id}
+                      className="transition hover:bg-white/[0.02]"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                              transaction.type === 'income'
+                                ? 'bg-emerald-500/10 text-emerald-400'
+                                : 'bg-rose-500/10 text-rose-400'
+                            }`}
+                          >
+                            {transaction.type === 'income' ? (
+                              <ArrowDownLeft size={19} />
+                            ) : (
+                              <ArrowUpRight size={19} />
+                            )}
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="font-medium text-white">
+                              {transaction.description}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {transaction.type === 'income' ? 'Ingreso' : 'Gasto'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-gray-400">
+                        {transaction.category}
+                      </td>
+
+                      <td className="whitespace-nowrap px-6 py-4 text-gray-400">
+                        {formatDate(transaction.date)}
+                      </td>
+
+                      <td
+                        className={`whitespace-nowrap px-6 py-4 text-right font-semibold ${
+                          transaction.type === 'income'
+                            ? 'text-emerald-400'
+                            : 'text-rose-400'
+                        }`}
+                      >
+                        {transaction.type === 'income' ? '+' : '-'}
+                        {formatCurrency(transaction.amount, currency)}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingTransaction(transaction)}
+                            title="Editar movimiento"
+                            aria-label="Editar movimiento"
+                            className="rounded-lg p-2 text-gray-500 transition hover:bg-violet-500/10 hover:text-violet-400"
+                          >
+                            <Pencil size={17} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  '¿Estás seguro de eliminar este movimiento?'
+                                )
+                              ) {
+                                void handleDelete(transaction.id)
+                              }
+                            }}
+                            title="Eliminar movimiento"
+                            aria-label="Eliminar movimiento"
+                            className="rounded-lg p-2 text-gray-500 transition hover:bg-rose-500/10 hover:text-rose-400"
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+
+              </table>
+            </div>
+          </>
         )}
-
       </div>
     </div>
   )
