@@ -232,19 +232,18 @@ const previousMonthBalance = previousMonthIncome - previousMonthExpenses
 </div>
 
       {/* INGRESOS Y GASTOS POR MES */}
-      <div className="rounded-2xl border border-white/10 bg-[#11111B] p-6">
+      <div className="min-w-0 rounded-2xl border border-white/10 bg-[#11111B] p-4 sm:p-6">
         <h2 className="font-semibold">Ingresos y gastos</h2>
         <p className="mt-1 text-xs text-gray-500">
           Comparación de los últimos 6 meses
         </p>
 
-        <div className="mt-6 h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={months}>
-              <CartesianGrid
-                stroke="#ffffff10"
-                vertical={false}
-              />
+<div className="mt-6 h-72 min-w-0 sm:h-80">
+  <ResponsiveContainer width="100%" height="100%">
+    <BarChart
+      data={months}
+      margin={{ top: 8, right: 8, left: 0, bottom: 8 }}
+    >
 
               <XAxis
                 dataKey="name"
@@ -253,14 +252,25 @@ const previousMonthBalance = previousMonthIncome - previousMonthExpenses
                 axisLine={false}
               />
 
-              <YAxis
-                stroke="#9CA3AF"
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) =>
-                  formatCurrency(Number(value), currency)
-                }
-              />
+<YAxis
+  stroke="#9CA3AF"
+  tickLine={false}
+  axisLine={false}
+  width={75}
+  tick={{ fontSize: 11 }}
+  tickFormatter={(value) => {
+    const number = Number(value)
+    const symbol = formatCurrency(0, currency)
+      .replace(/[\d.,\s-]/g, '')
+
+    const compactNumber = new Intl.NumberFormat('es-AR', {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(number)
+
+    return `${symbol} ${compactNumber}`
+  }}
+/>
 
               <Tooltip
                 cursor={false}

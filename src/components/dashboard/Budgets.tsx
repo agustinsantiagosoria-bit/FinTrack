@@ -336,7 +336,7 @@ async function handleDelete(budget: Budget) {
     <Pencil size={17} />
   </button>
 
-  <button
+    <button
     type="button"
     onClick={() => handleDelete(budget)}
     disabled={deletingId !== null || saving}
@@ -346,8 +346,9 @@ async function handleDelete(budget: Budget) {
     <Trash2 size={17} />
   </button>
 </div>
+</div>
 
-                  <div className="flex flex-wrap items-end justify-between gap-3">
+<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <p className="text-2xl font-bold text-white">
                         {formatCurrency(spent, currency)}
@@ -388,8 +389,6 @@ async function handleDelete(budget: Budget) {
                   <p className="text-xs text-gray-500">
                     {percentage.toFixed(1)}% del presupuesto utilizado
                   </p>
-                </div>
-                
                 </div>
               )
             })
