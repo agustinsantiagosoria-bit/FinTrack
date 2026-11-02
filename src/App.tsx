@@ -1,7 +1,7 @@
 
 import { useState } from 'react'
 
-import Sidebar from './components/layout/sidebar'
+import Sidebar from './components/layout/Sidebar'
 import Dashboard from './components/dashboard/Dashboard'
 import TransactionForm from './components/dashboard/TransactionForm'
 import { useTransactions } from './hooks/useTransactions'
