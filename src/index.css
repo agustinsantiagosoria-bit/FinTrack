@@ -24,3 +24,39 @@
 *::-webkit-scrollbar-thumb:hover {
   background: #777785;
 }
+
+
+/* Base responsive: evita desbordamientos del viewport en móviles */
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+}

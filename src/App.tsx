@@ -1,5 +1,6 @@
 
 import { useState } from 'react'
+import { Menu } from 'lucide-react'
 
 import Auth from './components/auth/Auth'
 import { useAuth } from './hooks/useAuth'
@@ -50,6 +51,12 @@ function AuthenticatedApp({
   onSignOut: () => Promise<void>
 }) {
   const [activePage, setActivePage] = useState('Dashboard')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  function handleNavigate(page: string) {
+    setActivePage(page)
+    setMobileMenuOpen(false)
+  }
 
   // Movimientos
   const {
@@ -119,17 +126,39 @@ const {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0B0B12]">
+    <div className="relative flex h-screen overflow-hidden bg-[#0B0B12]">
       <Sidebar
         activeItem={activePage}
-        onNavigate={setActivePage}
-        onNewTransaction={() => setActivePage('Nuevo movimiento')}
+        onNavigate={handleNavigate}
+        onNewTransaction={() => handleNavigate('Nuevo movimiento')}
         userName={user.user_metadata?.full_name || 'Mi cuenta'}
         onSignOut={onSignOut}
+        isMobileOpen={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
       />
 
-      <main className="min-w-0 flex-1 overflow-y-auto p-5 text-white md:p-8">
-        <div className="mx-auto max-w-7xl space-y-8">
+      <main className="h-screen min-w-0 flex-1 overflow-y-auto p-4 text-white sm:p-5 md:p-8">
+        <div className="mx-auto max-w-7xl space-y-6 md:space-y-8">
+          <header className="-mx-4 -mt-4 mb-5 flex items-center justify-between border-b border-white/10 bg-[#11111B] px-4 py-3 sm:-mx-5 sm:-mt-5 sm:px-5 md:hidden">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600">
+                <span className="text-sm font-bold">FT</span>
+              </div>
+              <div>
+                <p className="text-base font-bold tracking-tight">Fin<span className="text-violet-400">Track</span></p>
+                <p className="text-[10px] text-gray-500">Personal Finance</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Abrir menú de navegación"
+              aria-expanded={mobileMenuOpen}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-200 transition hover:bg-white/10"
+            >
+              <Menu size={21} />
+            </button>
+          </header>
 
           {transactionsError && (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
