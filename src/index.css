@@ -1,1 +1,26 @@
+
 @import "tailwindcss";
+
+/* Scrollbars estilo ChatGPT */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f4b transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #3f3f4b;
+  border-radius: 20px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #777785;
+}

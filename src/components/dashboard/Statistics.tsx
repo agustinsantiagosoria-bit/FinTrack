@@ -89,6 +89,39 @@ export default function Statistics({
 
   const balance = totalIncome - totalExpenses
 
+  // BALANCE DEL MES ANTERIOR
+const today = new Date()
+
+const previousMonthDate = new Date(
+  today.getFullYear(),
+  today.getMonth() - 1,
+  1
+)
+
+const previousMonthKey = [
+  previousMonthDate.getFullYear(),
+  String(previousMonthDate.getMonth() + 1).padStart(2, '0'),
+].join('-')
+
+const previousMonthName = previousMonthDate.toLocaleDateString(
+  'es-AR',
+  { month: 'long', year: 'numeric' }
+)
+
+const previousMonthTransactions = transactions.filter(
+  (transaction) => transaction.date.startsWith(previousMonthKey)
+)
+
+const previousMonthIncome = previousMonthTransactions
+  .filter((item) => item.type === 'income')
+  .reduce((total, item) => total + item.amount, 0)
+
+const previousMonthExpenses = previousMonthTransactions
+  .filter((item) => item.type === 'expense')
+  .reduce((total, item) => total + item.amount, 0)
+
+const previousMonthBalance = previousMonthIncome - previousMonthExpenses
+
   const expensesByCategory = transactions
     .filter((item) => item.type === 'expense')
     .reduce((result, item) => {
@@ -141,6 +174,62 @@ export default function Statistics({
         </div>
 
       </div>
+
+      {/* BALANCE MENSUAL PASADO */}
+<div className="rounded-2xl border border-white/10 bg-[#11111B] p-6">
+  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+    <div>
+      <p className="text-sm font-medium text-gray-400">
+        Balance Mensual Pasado
+      </p>
+
+      <h2 className="mt-2 text-xl font-bold capitalize">
+        {previousMonthName}
+      </h2>
+
+      <p className="mt-1 text-xs text-gray-500">
+        Resultado de tus movimientos del mes anterior
+      </p>
+    </div>
+
+    <div className="sm:text-right">
+      <p className="text-xs text-gray-500">
+        Balance final
+      </p>
+
+      <p className={`mt-1 text-3xl font-bold ${
+        previousMonthBalance > 0
+          ? 'text-emerald-400'
+          : previousMonthBalance < 0
+            ? 'text-rose-400'
+            : 'text-gray-300'
+      }`}>
+        {previousMonthBalance > 0 ? '+' : ''}
+        {formatCurrency(previousMonthBalance, currency)}
+      </p>
+    </div>
+
+  </div>
+
+  <div className="mt-6 grid gap-4 border-t border-white/10 pt-5 sm:grid-cols-2">
+
+    <div>
+      <p className="text-xs text-gray-500">Ingresos del mes</p>
+      <p className="mt-1 text-lg font-semibold text-emerald-400">
+        {formatCurrency(previousMonthIncome, currency)}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-xs text-gray-500">Gastos del mes</p>
+      <p className="mt-1 text-lg font-semibold text-rose-400">
+        {formatCurrency(previousMonthExpenses, currency)}
+      </p>
+    </div>
+
+  </div>
+</div>
 
       {/* INGRESOS Y GASTOS POR MES */}
       <div className="rounded-2xl border border-white/10 bg-[#11111B] p-6">

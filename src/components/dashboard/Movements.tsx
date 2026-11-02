@@ -1,5 +1,6 @@
 
 import { useState } from 'react'
+import type { FormEvent } from 'react'
 import {
   Search,
   ArrowDownLeft,
@@ -9,14 +10,16 @@ import {
 } from 'lucide-react'
 
 import type { Transaction } from '../../types/transaction'
+import type { Category } from '../../types/category'
 import type { Currency } from '../../hooks/useSettings'
 import { formatCurrency } from '../../utils/formatCurrency'
 
 interface MovementsProps {
   transactions: Transaction[]
   currency: Currency
-  onDelete: (id: string) => void
-  onUpdate: (transaction: Transaction) => void
+  onDelete: (id: string) => Promise<void>
+  onUpdate: (transaction: Transaction) => Promise<void>
+  categories: Category[]
 }
 
 export default function Movements({
@@ -24,11 +27,51 @@ export default function Movements({
   currency,
   onDelete,
   onUpdate,
+  categories,
 }: MovementsProps) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editError, setEditError] = useState('')
+  const [actionError, setActionError] = useState('')
+
+  const editingCategories = categories.filter(
+    (category) => category.type === editingTransaction?.type
+  )
+
+  async function handleDelete(id: string) {
+    setActionError('')
+    try {
+      await onDelete(id)
+    } catch {
+      setActionError('No se pudo eliminar el movimiento. Intentá nuevamente.')
+    }
+  }
+
+  async function handleUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!editingTransaction) return
+    if (!editingCategories.some((category) => category.name === editingTransaction.category)) {
+      setEditError('Elegí una categoría válida para este tipo de movimiento.')
+      return
+    }
+    if (!Number.isFinite(editingTransaction.amount) || editingTransaction.amount <= 0) {
+      setEditError('El importe debe ser mayor que cero.')
+      return
+    }
+    setSavingEdit(true)
+    setEditError('')
+    try {
+      await onUpdate(editingTransaction)
+      setEditingTransaction(null)
+    } catch {
+      setEditError('No se pudo actualizar el movimiento. Tus cambios siguen disponibles para reintentar.')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
 
   const filteredTransactions = transactions
     .filter((transaction) => {
@@ -106,16 +149,14 @@ export default function Movements({
       {/* FORMULARIO DE EDICIÓN */}
       {editingTransaction && (
         <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            onUpdate(editingTransaction)
-            setEditingTransaction(null)
-          }}
+          onSubmit={handleUpdate}
           className="space-y-4 rounded-2xl border border-violet-500/30 bg-[#11111B] p-6"
         >
-          <h2 className="text-lg font-semibold">
-            Editar movimiento
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold">Editar movimiento</h2>
+            <button type="button" onClick={() => setEditingTransaction(null)} disabled={savingEdit} className="text-sm text-gray-400 hover:text-white">Cancelar</button>
+          </div>
+          {editError && <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{editError}</p>}
 
           <div className="grid gap-4 md:grid-cols-2">
 
@@ -125,6 +166,7 @@ export default function Movements({
               </label>
               <input
                 required
+                disabled={savingEdit}
                 value={editingTransaction.description}
                 onChange={(e) =>
                   setEditingTransaction({
@@ -140,17 +182,15 @@ export default function Movements({
               <label className="mb-2 block text-sm text-gray-400">
                 Categoría
               </label>
-              <input
+              <select
                 required
                 value={editingTransaction.category}
-                onChange={(e) =>
-                  setEditingTransaction({
-                    ...editingTransaction,
-                    category: e.target.value,
-                  })
-                }
+                onChange={(e) => setEditingTransaction({ ...editingTransaction, category: e.target.value })}
+                disabled={savingEdit || editingCategories.length === 0}
                 className="w-full rounded-xl border border-white/10 bg-[#0B0B12] px-4 py-3 text-sm text-white outline-none focus:border-violet-500"
-              />
+              >
+                {editingCategories.length === 0 ? <option value="">No hay categorías disponibles</option> : editingCategories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}
+              </select>
             </div>
 
             <div>
@@ -159,6 +199,7 @@ export default function Movements({
               </label>
               <input
                 required
+                disabled={savingEdit}
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -179,6 +220,7 @@ export default function Movements({
               </label>
               <input
                 required
+                disabled={savingEdit}
                 type="date"
                 value={editingTransaction.date}
                 onChange={(e) =>
@@ -201,8 +243,10 @@ export default function Movements({
                   setEditingTransaction({
                     ...editingTransaction,
                     type: e.target.value as Transaction['type'],
+                    category: categories.find((category) => category.type === e.target.value)?.name ?? '',
                   })
                 }
+                disabled={savingEdit}
                 className="w-full rounded-xl border border-white/10 bg-[#0B0B12] px-4 py-3 text-sm text-white outline-none focus:border-violet-500"
               >
                 <option value="income">Ingreso</option>
@@ -215,21 +259,17 @@ export default function Movements({
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold transition hover:bg-violet-500"
+              disabled={savingEdit || editingCategories.length === 0}
+              className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold transition hover:bg-violet-500 disabled:opacity-50"
             >
-              Guardar cambios
+              {savingEdit ? 'Guardando...' : 'Guardar cambios'}
             </button>
 
-            <button
-              type="button"
-              onClick={() => setEditingTransaction(null)}
-              className="rounded-xl border border-white/10 px-5 py-3 text-sm text-gray-300 transition hover:bg-white/5"
-            >
-              Cancelar
-            </button>
           </div>
         </form>
       )}
+
+      {actionError && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{actionError}</p>}
 
       {/* TABLA */}
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#11111B]">
@@ -335,7 +375,7 @@ export default function Movements({
                                 '¿Estás seguro de eliminar este movimiento?'
                               )
                             ) {
-                              onDelete(transaction.id)
+                              void handleDelete(transaction.id)
                             }
                           }}
                           title="Eliminar movimiento"

@@ -10,6 +10,8 @@ import {
   LogOut,
   Plus,
   CreditCard,
+  PiggyBank,
+  Code2,
 } from 'lucide-react'
 
 const navigation = [
@@ -21,20 +23,21 @@ const navigation = [
       { name: 'Categorías', icon: Tags },
     ],
   },
-  {
-    title: 'FINANZAS',
-    items: [
-      { name: 'Presupuestos', icon: Wallet },
-      { name: 'Estadísticas', icon: ChartNoAxesCombined },
-    ],
-  },
+{
+  title: 'FINANZAS',
+  items: [
+    { name: 'Presupuestos', icon: Wallet },
+    { name: 'Ahorros', icon: PiggyBank },
+    { name: 'Estadísticas', icon: ChartNoAxesCombined },
+  ],
+},
 ]
 
 interface SidebarProps {
   activeItem: string
   onNavigate: (page: string) => void
   onNewTransaction: () => void
-  userEmail: string
+  userName: string
 onSignOut: () => Promise<void>
 }
 
@@ -42,11 +45,11 @@ export default function Sidebar({
   activeItem,
   onNavigate,
   onNewTransaction,
-  userEmail,
+  userName,
   onSignOut,
 }: SidebarProps) {
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-white/10 bg-[#11111B] px-5 py-6 text-white">
+    <aside className="flex h-screen w-64 shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-white/10 bg-[#11111B] px-5 py-6 text-white">
 
       {/* LOGO */}
       <div className="mb-10 flex items-center gap-3 px-2">
@@ -127,11 +130,18 @@ export default function Sidebar({
           Ayuda
         </button>
       </div>
-
+      
+      <button
+  onClick={() => onNavigate('Acerca del desarrollador')}
+  className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-400 transition hover:bg-white/5 hover:text-white"
+>
+  <Code2 size={19} />
+  Acerca del desarrollador
+</button>
       {/* PERFIL */}
 <div className="mt-5 flex items-center gap-3 border-t border-white/10 pt-5">
   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
-    {userEmail.charAt(0).toUpperCase()}
+    {userName.charAt(0).toUpperCase()}
   </div>
 
   <div className="min-w-0 flex-1">
@@ -139,7 +149,7 @@ export default function Sidebar({
       Mi cuenta
     </p>
     <p className="truncate text-xs text-gray-500">
-      {userEmail}
+      {userName}
     </p>
   </div>
 

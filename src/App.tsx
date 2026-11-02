@@ -12,11 +12,15 @@ import Categories from './components/dashboard/Categories'
 import Budgets from './components/dashboard/Budgets'
 import Statistics from './components/dashboard/Statistics'
 import Settings from './components/dashboard/Settings'
+import Savings from './components/savings/Savings'
+import Help from './components/help/Help'
+import About from './components/about/About'
 
 import { useTransactions } from './hooks/useTransactions'
 import { useCategories } from './hooks/useCategories'
 import { useBudgets } from './hooks/useBudgets'
 import { useSettings } from './hooks/useSettings'
+import { useSavings } from './hooks/useSavings'
 
 // Control de autenticación
 function App() {
@@ -85,14 +89,26 @@ const {
   updateCurrency,
 } = useSettings(user.id)
 
+// Ahorros
+const {
+  goals,
+  loading: savingsLoading,
+  error: savingsError,
+  addGoal,
+  addContribution,
+  deleteContribution,
+  deleteGoal,
+} = useSavings(user.id)
+
   // Esperar a que se carguen los datos
-  if (transactionsLoading || categoriesLoading || budgetsLoading || settingsLoading) {
+  if (transactionsLoading || categoriesLoading || budgetsLoading || settingsLoading || savingsLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0B0B12] text-white">
         <p className="text-gray-400">Cargando FinTrack...</p>
       </div>
     )
   }
+  
 
   // Agregar movimiento
   async function handleAddTransaction(
@@ -108,7 +124,7 @@ const {
         activeItem={activePage}
         onNavigate={setActivePage}
         onNewTransaction={() => setActivePage('Nuevo movimiento')}
-        userEmail={user.email ?? ''}
+        userName={user.user_metadata?.full_name || 'Mi cuenta'}
         onSignOut={onSignOut}
       />
 
@@ -137,6 +153,12 @@ const {
     {settingsError}
   </div>
 )}
+
+{savingsError && (
+  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+    {savingsError}
+  </div>
+)}
           {activePage === 'Dashboard' && (
             <Dashboard
               transactions={transactions}
@@ -157,6 +179,7 @@ const {
               currency={settings.currency}
               onDelete={deleteTransaction}
               onUpdate={updateTransaction}
+              categories={categories}
             />
           )}
 
@@ -195,6 +218,21 @@ const {
             />
           )}
 
+          {activePage === 'Ayuda' && <Help />}
+
+          {activePage === 'Acerca del desarrollador' && <About />}
+
+          {activePage === 'Ahorros' && (
+  <Savings
+    goals={goals}
+    currency={settings.currency}
+    onAddGoal={addGoal}
+    onAddContribution={addContribution}
+    onDeleteGoal={deleteGoal}
+    onDeleteContribution={deleteContribution}
+  />
+)}
+
           {![
             'Dashboard',
             'Nuevo movimiento',
@@ -203,6 +241,9 @@ const {
             'Presupuestos',
             'Estadísticas',
             'Configuración',
+            'Ahorros',
+            'Ayuda',
+            'Acerca del desarrollador',
           ].includes(activePage) && (
             <div>
               <h1 className="text-3xl font-bold">{activePage}</h1>

@@ -6,6 +6,7 @@ import type { Category } from '../../types/category'
 import type { Transaction } from '../../types/transaction'
 import type { Currency } from '../../hooks/useSettings'
 import { formatCurrency } from '../../utils/formatCurrency'
+import MonthPicker from '../ui/MonthPicker'
 
 interface BudgetsProps {
   budgets: Budget[]
@@ -213,13 +214,10 @@ async function handleDelete(budget: Budget) {
               Mes
             </label>
 
-            <input
-              required
-              type="month"
-              value={month}
-              onChange={(event) => setMonth(event.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-[#0B0B12] px-4 py-3 text-sm text-white outline-none focus:border-violet-500"
-            />
+<MonthPicker
+  value={month}
+  onChange={setMonth}
+/>
           </div>
 
           <div>
