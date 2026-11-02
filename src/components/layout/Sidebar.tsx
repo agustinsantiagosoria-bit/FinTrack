@@ -161,28 +161,35 @@ export default function Sidebar({
   <Code2 size={19} />
   Acerca del desarrollador
 </button>
-      {/* PERFIL */}
-<div className="mt-5 flex items-center gap-3 border-t border-white/10 pt-5">
-  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
-    {userName.charAt(0).toUpperCase()}
-  </div>
+{/* PERFIL Y CERRAR SESIÓN */}
+<div className="mt-auto shrink-0 border-t border-white/10 pt-5">
+  <div className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3">
+    {/* Avatar */}
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
+      {userName.charAt(0).toUpperCase()}
+    </div>
 
-  <div className="min-w-0 flex-1">
-    <p className="truncate text-sm font-semibold">
-      Mi cuenta
-    </p>
-    <p className="truncate text-xs text-gray-500">
-      {userName}
-    </p>
-  </div>
+    {/* Información de la cuenta */}
+    <div className="min-w-0 flex-1">
+      <p className="truncate text-sm font-semibold text-white">
+        Mi cuenta
+      </p>
+      <p className="truncate text-xs text-gray-500">
+        {userName}
+      </p>
+    </div>
 
-  <button
-    onClick={onSignOut}
-    title="Cerrar sesión"
-    className="text-gray-500 transition hover:text-red-400"
-  >
-    <LogOut size={17} />
-  </button>
+    {/* Cerrar sesión */}
+    <button
+      type="button"
+      onClick={onSignOut}
+      title="Cerrar sesión"
+      aria-label="Cerrar sesión"
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-400 transition hover:bg-red-500/10 hover:text-red-400"
+    >
+      <LogOut size={19} />
+    </button>
+  </div>
 </div>
       </aside>
     </>
